@@ -24,13 +24,17 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(project)
-
 	for _, repo := range c.Repositories {
 		pullRequests, err := gh.ListOpenPullRequests(repo.Name, ctx)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(pullRequests)
+		for _, pullRequest := range pullRequests {
+			item, err := gh.AddProjectItem(project.ID, pullRequest.ID, ctx)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(item)
+		}
 	}
 }

@@ -25,7 +25,7 @@ func (c *Client) GetOrganizationProject(org string, projectNumber int, ctx conte
 	var q struct {
 		Organization struct {
 			ProjectNext struct {
-				ID     string
+				ID     githubv4.ID
 				Fields struct {
 					Nodes    []ProjectField
 					PageInfo struct {
@@ -60,6 +60,24 @@ func (c *Client) GetOrganizationProject(org string, projectNumber int, ctx conte
 	}
 
 	return project, nil
+}
+
+func (c *Client) AddProjectItem(projectID, itemID githubv4.ID, ctx context.Context) (ProjectItem, error) {
+	var m struct {
+		AddProjectNextItem struct {
+			ProjectNextItem ProjectItem
+		} `graphql:"addProjectNextItem(input: $input)"`
+	}
+	input := githubv4.AddProjectNextItemInput{
+		ProjectID: projectID,
+		ContentID: itemID,
+	}
+
+	err := c.client.Mutate(ctx, &m, input, nil)
+	if err != nil {
+		return ProjectItem{}, err
+	}
+	return m.AddProjectNextItem.ProjectNextItem, nil
 }
 
 func (c *Client) ListOpenPullRequests(repo string, ctx context.Context) ([]PullRequest, error) {

@@ -8,3 +8,5 @@ require (
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace github.com/shurcooL/githubv4 => github.com/rkoster/githubv4 v0.0.0-20211116152855-3c0e9ae996cd
