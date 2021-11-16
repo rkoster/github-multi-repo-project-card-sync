@@ -17,7 +17,13 @@ type Project struct {
 }
 
 type Repository struct {
-	Name string `yaml:"name"`
+	Name   string  `yaml:"name"`
+	Fields []Field `yaml:"fields"`
+}
+
+type Field struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
 }
 
 func LoadConfig(file string) (*Config, error) {

@@ -1,6 +1,8 @@
 package github
 
 import (
+	"encoding/json"
+
 	"github.com/shurcooL/githubv4"
 )
 
@@ -15,20 +17,46 @@ type PullRequest struct {
 
 type Project struct {
 	ID     githubv4.ID
-	Fields []ProjectField
+	Fields ProjectFields
 }
+
+type ProjectFields []ProjectField
 
 type ProjectField struct {
 	ID       githubv4.ID
 	Name     string
-	Settings interface{}
+	Settings string
+}
+
+type FieldOption struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type ProjectItem struct {
 	ID githubv4.ID
 }
 
-type addProjectNextItem struct {
-	ProjectID githubv4.ID `json:"projectId"`
-	ContentID githubv4.ID `json:"contentId"`
+func (pf ProjectFields) FindByName(name string) (ProjectField, bool) {
+	for _, field := range pf {
+		if field.Name == name {
+			return field, true
+		}
+	}
+	return ProjectField{}, false
+}
+
+func (pf ProjectField) FindOptionByName(name string) (FieldOption, bool) {
+	var settings struct {
+		Options []FieldOption `json:"options"`
+	}
+
+	json.Unmarshal([]byte(pf.Settings), &settings)
+
+	for _, option := range settings.Options {
+		if option.Name == name {
+			return option, true
+		}
+	}
+	return FieldOption{}, false
 }

@@ -34,7 +34,21 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println(item)
+			for _, field := range repo.Fields {
+				f, found := project.Fields.FindByName(field.Name)
+				if !found {
+					panic(fmt.Errorf("Project does not have field with name: %s", field.Name))
+				}
+
+				o, found := f.FindOptionByName(field.Value)
+				if !found {
+					panic(fmt.Errorf("Project field: %s does not have an option: %s", field.Name, field.Value))
+				}
+				_, err := gh.UpdateProjectItemField(project.ID, item.ID, f.ID, o.ID, ctx)
+				if err != nil {
+					panic(err)
+				}
+			}
 		}
 	}
 }

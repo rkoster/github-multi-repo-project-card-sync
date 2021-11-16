@@ -80,6 +80,26 @@ func (c *Client) AddProjectItem(projectID, itemID githubv4.ID, ctx context.Conte
 	return m.AddProjectNextItem.ProjectNextItem, nil
 }
 
+func (c *Client) UpdateProjectItemField(projectID, itemID, fieldID githubv4.ID, value string, ctx context.Context) (ProjectItem, error) {
+	var m struct {
+		UpdateProjectNextItemField struct {
+			ProjectNextItem ProjectItem
+		} `graphql:"updateProjectNextItemField(input: $input)"`
+	}
+	input := githubv4.UpdateProjectNextItemFieldInput{
+		ProjectID: projectID,
+		ItemID:    itemID,
+		FieldID:   fieldID,
+		Value:     githubv4.String(value),
+	}
+
+	err := c.client.Mutate(ctx, &m, input, nil)
+	if err != nil {
+		return ProjectItem{}, err
+	}
+	return m.UpdateProjectNextItemField.ProjectNextItem, nil
+}
+
 func (c *Client) ListOpenPullRequests(repo string, ctx context.Context) ([]PullRequest, error) {
 	owner := strings.Split(repo, "/")[0]
 	name := strings.Split(repo, "/")[1]
