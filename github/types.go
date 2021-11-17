@@ -7,10 +7,13 @@ import (
 )
 
 type PullRequest struct {
-	ID      string
-	URL     string
-	IsDraft bool
-	Author  struct {
+	ID            string
+	URL           string
+	IsDraft       bool
+	TimelineItems struct {
+		UpdatedAt githubv4.DateTime
+	}
+	Author struct {
 		Login string
 	}
 }

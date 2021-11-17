@@ -53,6 +53,8 @@ func main() {
 					value = o.ID
 				case "author":
 					value = pullRequest.Author.Login
+				case "last_activity":
+					value = pullRequest.TimelineItems.UpdatedAt.String()
 				case "default_single_select":
 					currentValue, found := item.FieldValues.Nodes.FindByID(f.ID)
 					if found && currentValue.Value != "" {
