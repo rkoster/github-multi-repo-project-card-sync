@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/shurcooL/githubv4"
@@ -77,13 +78,19 @@ func (c *Client) AddProjectItem(projectID, itemID githubv4.ID, ctx context.Conte
 	if err != nil {
 		return ProjectItem{}, err
 	}
+
+	if m.AddProjectNextItem.ProjectNextItem.FieldValues.PageInfo.HasNextPage {
+		return ProjectItem{}, fmt.Errorf("More then 100 project fields are not supported")
+	}
 	return m.AddProjectNextItem.ProjectNextItem, nil
 }
 
 func (c *Client) UpdateProjectItemField(projectID, itemID, fieldID githubv4.ID, value string, ctx context.Context) (ProjectItem, error) {
 	var m struct {
 		UpdateProjectNextItemField struct {
-			ProjectNextItem ProjectItem
+			ProjectNextItem struct {
+				ID githubv4.ID
+			}
 		} `graphql:"updateProjectNextItemField(input: $input)"`
 	}
 	input := githubv4.UpdateProjectNextItemFieldInput{
@@ -97,7 +104,7 @@ func (c *Client) UpdateProjectItemField(projectID, itemID, fieldID githubv4.ID, 
 	if err != nil {
 		return ProjectItem{}, err
 	}
-	return m.UpdateProjectNextItemField.ProjectNextItem, nil
+	return ProjectItem{ID: m.UpdateProjectNextItemField.ProjectNextItem.ID}, nil
 }
 
 func (c *Client) ListOpenPullRequests(repo string, ctx context.Context) ([]PullRequest, error) {

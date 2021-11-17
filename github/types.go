@@ -34,8 +34,24 @@ type FieldOption struct {
 }
 
 type ProjectItem struct {
-	ID githubv4.ID
+	ID          githubv4.ID
+	FieldValues struct {
+		Nodes    FieldValues
+		PageInfo struct {
+			EndCursor   githubv4.String
+			HasNextPage bool
+		}
+	} `graphql:"fieldValues(first: 100)"`
 }
+
+type ProjectItems []ProjectItem
+
+type FieldValue struct {
+	ProjectField ProjectField
+	Value        string
+}
+
+type FieldValues []FieldValue
 
 func (pf ProjectFields) FindByName(name string) (ProjectField, bool) {
 	for _, field := range pf {
@@ -59,4 +75,13 @@ func (pf ProjectField) FindOptionByName(name string) (FieldOption, bool) {
 		}
 	}
 	return FieldOption{}, false
+}
+
+func (fv FieldValues) FindByID(id githubv4.ID) (FieldValue, bool) {
+	for _, field := range fv {
+		if field.ProjectField.ID == id {
+			return field, true
+		}
+	}
+	return FieldValue{}, false
 }

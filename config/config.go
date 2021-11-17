@@ -24,6 +24,7 @@ type Repository struct {
 type Field struct {
 	Name  string `yaml:"name"`
 	Value string `yaml:"value"`
+	Type  string `yaml:"type"`
 }
 
 func LoadConfig(file string) (*Config, error) {
