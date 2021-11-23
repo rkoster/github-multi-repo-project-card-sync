@@ -18,6 +18,17 @@ type PullRequest struct {
 	}
 }
 
+type Issue struct {
+	ID            string
+	URL           string
+	TimelineItems struct {
+		UpdatedAt githubv4.DateTime
+	}
+	Author struct {
+		Login string
+	}
+}
+
 type Project struct {
 	ID     githubv4.ID
 	Fields ProjectFields

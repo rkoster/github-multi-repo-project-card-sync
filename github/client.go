@@ -145,3 +145,42 @@ func (c *Client) ListOpenPullRequests(repo string, ctx context.Context) ([]PullR
 
 	return allPullRequests, nil
 }
+
+func (c *Client) ListOpenIssues(repo string, ctx context.Context) ([]Issue, error) {
+	owner := strings.Split(repo, "/")[0]
+	name := strings.Split(repo, "/")[1]
+
+	var q struct {
+		Repository struct {
+			Issues struct {
+				Nodes    []Issue
+				PageInfo struct {
+					EndCursor   githubv4.String
+					HasNextPage bool
+				}
+			} `graphql:"issues(first: 100, after: $issuesCursor, states: [OPEN])"` // 100 per page.
+		} `graphql:"repository(owner: $repositoryOwner, name: $repositoryName)"`
+	}
+
+	variables := map[string]interface{}{
+		"repositoryOwner": githubv4.String(owner),
+		"repositoryName":  githubv4.String(name),
+		"issuesCursor":    (*githubv4.String)(nil), // Null after argument to get first page.
+	}
+
+	// Get Issues from all pages.
+	var allIssues []Issue
+	for {
+		err := c.client.Query(ctx, &q, variables)
+		if err != nil {
+			return []Issue{}, err
+		}
+		allIssues = append(allIssues, q.Repository.Issues.Nodes...)
+		if !q.Repository.Issues.PageInfo.HasNextPage {
+			break
+		}
+		variables["issuesCursor"] = githubv4.NewString(q.Repository.Issues.PageInfo.EndCursor)
+	}
+
+	return allIssues, nil
+}
