@@ -3,19 +3,40 @@ package github
 import (
 	"encoding/json"
 
+	enry "github.com/go-enry/go-enry/v2"
 	"github.com/shurcooL/githubv4"
 )
 
 type PullRequest struct {
-	ID            string
-	URL           string
-	IsDraft       bool
+	ID      string
+	URL     string
+	IsDraft bool
+	Files   struct {
+		Nodes []FileChange
+	} `graphql:"files(first: 100)"`
 	TimelineItems struct {
 		UpdatedAt githubv4.DateTime
 	}
 	Author struct {
 		Login string
 	}
+}
+
+type FileChange struct {
+	Additions int
+	Deletions int
+	Path      string
+}
+
+func (pr PullRequest) Changes() int {
+	var count int
+	for _, change := range pr.Files.Nodes {
+		if enry.IsVendor(change.Path) {
+			continue
+		}
+		count += change.Additions + change.Deletions
+	}
+	return count
 }
 
 type Issue struct {

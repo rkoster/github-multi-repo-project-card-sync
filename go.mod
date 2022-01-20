@@ -3,6 +3,7 @@ module github.com/rkoster/github-multi-repo-project-card-sync
 go 1.16
 
 require (
+	github.com/go-enry/go-enry/v2 v2.8.0
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/shurcooL/githubv4 v0.0.0-20210922025249-6831e00d857f

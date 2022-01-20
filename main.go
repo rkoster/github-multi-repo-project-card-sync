@@ -58,7 +58,7 @@ func main() {
 func processIssue(issue github.Issue, project github.Project, repo config.Repository, gh *github.Client, ctx context.Context) error {
 	item, err := gh.AddProjectItem(project.ID, issue.ID, ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to add project item got: %s", err)
 	}
 
 	for _, field := range repo.Fields {
@@ -71,6 +71,8 @@ func processIssue(issue github.Issue, project github.Project, repo config.Reposi
 
 		switch field.Type {
 		case "draft":
+			continue
+		case "changes":
 			continue
 		case "author":
 			value = issue.Author.Login
@@ -132,6 +134,8 @@ func processPullRequest(pullRequest github.PullRequest, project github.Project, 
 				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, field.Value)
 			}
 			value = o.ID
+		case "changes":
+			value = strconv.Itoa(pullRequest.Changes())
 		case "author":
 			value = pullRequest.Author.Login
 		case "last_activity":
