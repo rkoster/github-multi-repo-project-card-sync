@@ -159,7 +159,7 @@ func processPullRequest(pullRequest github.PullRequest, project github.Project, 
 		case "type":
 			o, found := f.FindOptionByName("Pull Request")
 			if !found {
-				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, "Issue")
+				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, "Pull Request")
 			}
 			value = o.ID
 		default:
