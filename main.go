@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -14,7 +15,12 @@ import (
 func main() {
 	logger := log.Default()
 
-	c, err := config.LoadConfig("config.yml")
+	var configFileName string
+	flag.StringVar(&configFileName, "config", "config.yml", "config file name to load")
+
+	flag.Parse()
+
+	c, err := config.LoadConfig(configFileName)
 	if err != nil {
 		logger.Fatalf("failed to load config: %s", err)
 	}
