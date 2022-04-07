@@ -3,8 +3,11 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
+	"github.com/bradleyfalzon/ghinstallation"
+	"github.com/google/go-github/v43/github"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
@@ -13,13 +16,33 @@ type Client struct {
 	client *githubv4.Client
 }
 
-func NewClient(token string, ctx context.Context) *Client {
+func NewTokenClient(token string, ctx context.Context) *Client {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	httpClient := oauth2.NewClient(ctx, src)
 
 	return &Client{githubv4.NewClient(httpClient)}
+}
+
+func NewAppClient(org string, app_id int64, private_key string, ctx context.Context) (*Client, error) {
+	appItr, err := ghinstallation.NewAppsTransport(http.DefaultTransport, app_id, []byte(private_key))
+	if err != nil {
+		return nil, err
+	}
+	client := &http.Client{Transport: appItr}
+	gh := github.NewClient(client)
+	installation, _, err := gh.Apps.FindOrganizationInstallation(ctx, org)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find installation for organization: %s got: %s", org, err)
+	}
+
+	itr, err := ghinstallation.New(http.DefaultTransport, app_id, *installation.ID, []byte(private_key))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{githubv4.NewClient(&http.Client{Transport: itr})}, nil
 }
 
 func (c *Client) GetOrganizationProject(org string, projectNumber int, ctx context.Context) (Project, error) {

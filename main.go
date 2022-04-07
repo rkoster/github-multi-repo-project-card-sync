@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/rkoster/github-multi-repo-project-card-sync/config"
 	"github.com/rkoster/github-multi-repo-project-card-sync/github"
@@ -27,7 +28,21 @@ func main() {
 
 	token := os.Getenv("GITHUB_TOKEN")
 	ctx := context.Background()
-	gh := github.NewClient(token, ctx)
+	var gh *github.Client
+	if token != "" {
+		gh = github.NewTokenClient(token, ctx)
+	} else {
+		private_key := strings.Replace(os.Getenv("GITHUB_PRIVATE_KEY"), `\n`, "\n", -1)
+		app_id, err := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
+		if err != nil {
+			logger.Fatalf("failed to parse GITHUB_APP_ID: %s", err)
+		}
+
+		gh, err = github.NewAppClient(c.Project.Organization, app_id, private_key, ctx)
+		if err != nil {
+			logger.Fatalf("failed to setup app auth: %s", err)
+		}
+	}
 
 	project, err := gh.GetOrganizationProject(c.Project.Organization, c.Project.Number, ctx)
 	if err != nil {
