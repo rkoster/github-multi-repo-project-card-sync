@@ -11,6 +11,7 @@ import (
 
 	"github.com/rkoster/github-multi-repo-project-card-sync/config"
 	"github.com/rkoster/github-multi-repo-project-card-sync/github"
+	"github.com/shurcooL/githubv4"
 )
 
 func main() {
@@ -77,7 +78,7 @@ func main() {
 }
 
 func processIssue(issue github.Issue, project github.Project, repo config.Repository, gh *github.Client, ctx context.Context) error {
-	item, err := gh.AddProjectItem(project.ID, issue.ID, ctx)
+	item, err := gh.AddProjectItem(&project.ID, githubv4.NewID(issue.ID), ctx)
 	if err != nil {
 		return fmt.Errorf("failed to add project item got: %s", err)
 	}
@@ -88,7 +89,7 @@ func processIssue(issue github.Issue, project github.Project, repo config.Reposi
 			return fmt.Errorf("Project does not have field with name: %s", field.Name)
 		}
 
-		var value string
+		var input githubv4.ProjectV2FieldValue
 
 		switch field.Type {
 		case "draft":
@@ -96,48 +97,48 @@ func processIssue(issue github.Issue, project github.Project, repo config.Reposi
 		case "changes":
 			continue
 		case "author":
-			value = issue.Author.Login
+			input.Text = &issue.Author.Login
 		case "last_activity":
-			value = issue.TimelineItems.UpdatedAt.String()
+			input.Date = &issue.TimelineItems.UpdatedAt
 		case "default_single_select":
-			currentValue, found := item.FieldValues.Nodes.FindByID(f.ID)
-			if found && currentValue.Value != "" {
+			currentValue, found := item.FieldValues.Nodes.FindByID(githubv4.NewID(f))
+			if found && currentValue.ProjectV2ItemFieldSingleSelectValue.Text != "" {
 				continue
 			}
 			o, found := f.FindOptionByName(field.Value)
 			if !found {
 				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, field.Value)
 			}
-			value = o.ID
+			input.SingleSelectOptionID = &o.ID
 		case "single_select":
 			o, found := f.FindOptionByName(field.Value)
 			if !found {
 				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, field.Value)
 			}
-			value = o.ID
+			input.SingleSelectOptionID = &o.ID
 		case "type":
 			o, found := f.FindOptionByName("Issue")
 			if !found {
 				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, "Issue")
 			}
-			value = o.ID
+			input.SingleSelectOptionID = &o.ID
 		default:
 			return fmt.Errorf(
 				"Only 'draft', 'author' and 'single_select' are currently supported values for field.type, given: %v", field.Type)
 		}
 
-		_, err := gh.UpdateProjectItemField(project.ID, item.ID, f.ID, value, ctx)
+		err := gh.UpdateProjectItemField(&project.ID, githubv4.NewID(item.ID), github.GetID(f), input, ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to update Project Item Field got: %s", err)
 		}
 	}
 	return nil
 }
 
 func processPullRequest(pullRequest github.PullRequest, project github.Project, repo config.Repository, gh *github.Client, ctx context.Context) error {
-	item, err := gh.AddProjectItem(project.ID, pullRequest.ID, ctx)
+	item, err := gh.AddProjectItem(githubv4.NewID(project.ID), githubv4.NewID(pullRequest.ID), ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to add Project Item got: %s", err)
 	}
 
 	for _, field := range repo.Fields {
@@ -146,7 +147,7 @@ func processPullRequest(pullRequest github.PullRequest, project github.Project, 
 			return fmt.Errorf("Project does not have field with name: %s", field.Name)
 		}
 
-		var value string
+		var input githubv4.ProjectV2FieldValue
 
 		switch field.Type {
 		case "draft":
@@ -154,43 +155,44 @@ func processPullRequest(pullRequest github.PullRequest, project github.Project, 
 			if !found {
 				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, field.Value)
 			}
-			value = o.ID
+			input.SingleSelectOptionID = &o.ID
 		case "changes":
-			value = strconv.Itoa(pullRequest.Changes())
+			input.Number = pullRequest.Changes()
 		case "author":
-			value = pullRequest.Author.Login
+			input.Text = &pullRequest.Author.Login
 		case "last_activity":
-			value = pullRequest.TimelineItems.UpdatedAt.String()
+			input.Date = &pullRequest.TimelineItems.UpdatedAt
 		case "default_single_select":
-			currentValue, found := item.FieldValues.Nodes.FindByID(f.ID)
-			if found && currentValue.Value != "" {
+			currentValue, found := item.FieldValues.Nodes.FindByID(githubv4.NewID(f))
+			if found && currentValue.ProjectV2ItemFieldSingleSelectValue.Text != "" {
 				continue
 			}
 			o, found := f.FindOptionByName(field.Value)
 			if !found {
 				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, field.Value)
 			}
-			value = o.ID
+			input.SingleSelectOptionID = &o.ID
 		case "single_select":
 			o, found := f.FindOptionByName(field.Value)
 			if !found {
 				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, field.Value)
 			}
-			value = o.ID
+			input.SingleSelectOptionID = &o.ID
 		case "type":
 			o, found := f.FindOptionByName("Pull Request")
 			if !found {
 				return fmt.Errorf("Project field: %s does not have an option: %s", field.Name, "Pull Request")
 			}
-			value = o.ID
+			input.SingleSelectOptionID = &o.ID
 		default:
 			return fmt.Errorf(
 				"Only 'draft', 'author' and 'single_select' are currently supported values for field.type, given: %v", field.Type)
 		}
 
-		_, err := gh.UpdateProjectItemField(project.ID, item.ID, f.ID, value, ctx)
+		err := gh.UpdateProjectItemField(githubv4.NewID(project.ID),
+			githubv4.NewID(item.ID), github.GetID(f), input, ctx)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to update Project Item Field got: %s", err)
 		}
 	}
 	return nil

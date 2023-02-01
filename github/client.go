@@ -48,16 +48,16 @@ func NewAppClient(org string, app_id int64, private_key string, ctx context.Cont
 func (c *Client) GetOrganizationProject(org string, projectNumber int, ctx context.Context) (Project, error) {
 	var q struct {
 		Organization struct {
-			ProjectNext struct {
+			ProjectV2 struct {
 				ID     githubv4.ID
 				Fields struct {
-					Nodes    []ProjectField
+					Nodes    ProjectFields
 					PageInfo struct {
 						EndCursor   githubv4.String
 						HasNextPage bool
 					}
 				} `graphql:"fields(first: 100, after: $fieldsCursor)"`
-			} `graphql:"projectNext(number: $projectNumber)"`
+			} `graphql:"projectV2(number: $projectNumber)"`
 		} `graphql:"organization(login: $organization)"`
 	}
 
@@ -75,24 +75,24 @@ func (c *Client) GetOrganizationProject(org string, projectNumber int, ctx conte
 		if err != nil {
 			return project, err
 		}
-		project.ID = q.Organization.ProjectNext.ID
-		project.Fields = append(project.Fields, q.Organization.ProjectNext.Fields.Nodes...)
-		if !q.Organization.ProjectNext.Fields.PageInfo.HasNextPage {
+		project.ID = &q.Organization.ProjectV2.ID
+		project.Fields = append(project.Fields, q.Organization.ProjectV2.Fields.Nodes...)
+		if !q.Organization.ProjectV2.Fields.PageInfo.HasNextPage {
 			break
 		}
-		variables["fieldsCursor"] = githubv4.NewString(q.Organization.ProjectNext.Fields.PageInfo.EndCursor)
+		variables["fieldsCursor"] = githubv4.NewString(q.Organization.ProjectV2.Fields.PageInfo.EndCursor)
 	}
 
 	return project, nil
 }
 
-func (c *Client) AddProjectItem(projectID, itemID githubv4.ID, ctx context.Context) (ProjectItem, error) {
+func (c *Client) AddProjectItem(projectID, itemID *githubv4.ID, ctx context.Context) (ProjectItem, error) {
 	var m struct {
-		AddProjectNextItem struct {
-			ProjectNextItem ProjectItem
-		} `graphql:"addProjectNextItem(input: $input)"`
+		AddProjectV2ItemById struct {
+			Item ProjectItem
+		} `graphql:"addProjectV2ItemById(input: $input)"`
 	}
-	input := githubv4.AddProjectNextItemInput{
+	input := githubv4.AddProjectV2ItemByIdInput{
 		ProjectID: projectID,
 		ContentID: itemID,
 	}
@@ -102,32 +102,33 @@ func (c *Client) AddProjectItem(projectID, itemID githubv4.ID, ctx context.Conte
 		return ProjectItem{}, err
 	}
 
-	if m.AddProjectNextItem.ProjectNextItem.FieldValues.PageInfo.HasNextPage {
+	if m.AddProjectV2ItemById.Item.FieldValues.PageInfo.HasNextPage {
 		return ProjectItem{}, fmt.Errorf("More then 100 project fields are not supported")
 	}
-	return m.AddProjectNextItem.ProjectNextItem, nil
+	return m.AddProjectV2ItemById.Item, nil
 }
 
-func (c *Client) UpdateProjectItemField(projectID, itemID, fieldID githubv4.ID, value string, ctx context.Context) (ProjectItem, error) {
+type FieldInput struct {
+	Date                 githubv4.Date
+	Number               githubv4.Int
+	SingleSelectOptionId githubv4.ID
+	Text                 githubv4.String
+}
+
+func (c *Client) UpdateProjectItemField(projectID, itemID, fieldID *githubv4.ID, input githubv4.ProjectV2FieldValue, ctx context.Context) error {
 	var m struct {
-		UpdateProjectNextItemField struct {
-			ProjectNextItem struct {
-				ID githubv4.ID
-			}
-		} `graphql:"updateProjectNextItemField(input: $input)"`
+		UpdateProjectV2ItemFieldValue struct {
+			ClientMutationId string
+		} `graphql:" updateProjectV2ItemFieldValue(input: $input)"`
 	}
-	input := githubv4.UpdateProjectNextItemFieldInput{
+	i := githubv4.UpdateProjectV2ItemFieldValueInput{
 		ProjectID: projectID,
 		ItemID:    itemID,
 		FieldID:   fieldID,
-		Value:     githubv4.String(value),
+		Value:     input,
 	}
 
-	err := c.client.Mutate(ctx, &m, input, nil)
-	if err != nil {
-		return ProjectItem{}, err
-	}
-	return ProjectItem{ID: m.UpdateProjectNextItemField.ProjectNextItem.ID}, nil
+	return c.client.Mutate(ctx, &m, i, nil)
 }
 
 func (c *Client) ListOpenPullRequests(repo string, ctx context.Context) ([]PullRequest, error) {

@@ -1,8 +1,6 @@
 package github
 
 import (
-	"encoding/json"
-
 	enry "github.com/go-enry/go-enry/v2"
 	"github.com/shurcooL/githubv4"
 )
@@ -15,10 +13,10 @@ type PullRequest struct {
 		Nodes []FileChange
 	} `graphql:"files(first: 100)"`
 	TimelineItems struct {
-		UpdatedAt githubv4.DateTime
+		UpdatedAt githubv4.Date
 	}
 	Author struct {
-		Login string
+		Login githubv4.String
 	}
 }
 
@@ -28,25 +26,25 @@ type FileChange struct {
 	Path      string
 }
 
-func (pr PullRequest) Changes() int {
-	var count int
+func (pr PullRequest) Changes() *githubv4.Float {
+	var count githubv4.Float
 	for _, change := range pr.Files.Nodes {
 		if enry.IsVendor(change.Path) {
 			continue
 		}
-		count += change.Additions + change.Deletions
+		count += githubv4.Float(change.Additions) + githubv4.Float(change.Deletions)
 	}
-	return count
+	return &count
 }
 
 type Issue struct {
-	ID            string
+	ID            githubv4.ID
 	URL           string
 	TimelineItems struct {
-		UpdatedAt githubv4.DateTime
+		UpdatedAt githubv4.Date
 	}
 	Author struct {
-		Login string
+		Login githubv4.String
 	}
 }
 
@@ -55,18 +53,7 @@ type Project struct {
 	Fields ProjectFields
 }
 
-type ProjectFields []ProjectField
-
-type ProjectField struct {
-	ID       githubv4.ID
-	Name     string
-	Settings string
-}
-
-type FieldOption struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
+type ProjectItems []ProjectItem
 
 type ProjectItem struct {
 	ID          githubv4.ID
@@ -77,46 +64,4 @@ type ProjectItem struct {
 			HasNextPage bool
 		}
 	} `graphql:"fieldValues(first: 100)"`
-}
-
-type ProjectItems []ProjectItem
-
-type FieldValue struct {
-	ProjectField ProjectField
-	Value        string
-}
-
-type FieldValues []FieldValue
-
-func (pf ProjectFields) FindByName(name string) (ProjectField, bool) {
-	for _, field := range pf {
-		if field.Name == name {
-			return field, true
-		}
-	}
-	return ProjectField{}, false
-}
-
-func (pf ProjectField) FindOptionByName(name string) (FieldOption, bool) {
-	var settings struct {
-		Options []FieldOption `json:"options"`
-	}
-
-	json.Unmarshal([]byte(pf.Settings), &settings)
-
-	for _, option := range settings.Options {
-		if option.Name == name {
-			return option, true
-		}
-	}
-	return FieldOption{}, false
-}
-
-func (fv FieldValues) FindByID(id githubv4.ID) (FieldValue, bool) {
-	for _, field := range fv {
-		if field.ProjectField.ID == id {
-			return field, true
-		}
-	}
-	return FieldValue{}, false
 }
