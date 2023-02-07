@@ -101,8 +101,8 @@ func processIssue(issue github.Issue, project github.Project, repo config.Reposi
 		case "last_activity":
 			input.Date = &issue.TimelineItems.UpdatedAt
 		case "default_single_select":
-			currentValue, found := item.FieldValues.Nodes.FindByID(githubv4.NewID(f))
-			if found && currentValue.ProjectV2ItemFieldSingleSelectValue.Text != "" {
+			currentValue, found := item.FieldValues.Nodes.FindByFieldName(field.Name)
+			if found && currentValue.ProjectV2ItemFieldSingleSelectValue.OptionID != "" {
 				continue
 			}
 			o, found := f.FindOptionByName(field.Value)
@@ -163,8 +163,8 @@ func processPullRequest(pullRequest github.PullRequest, project github.Project, 
 		case "last_activity":
 			input.Date = &pullRequest.TimelineItems.UpdatedAt
 		case "default_single_select":
-			currentValue, found := item.FieldValues.Nodes.FindByID(githubv4.NewID(f))
-			if found && currentValue.ProjectV2ItemFieldSingleSelectValue.Text != "" {
+			currentValue, found := item.FieldValues.Nodes.FindByFieldName(field.Name)
+			if found && currentValue.ProjectV2ItemFieldSingleSelectValue.OptionID != "" {
 				continue
 			}
 			o, found := f.FindOptionByName(field.Value)

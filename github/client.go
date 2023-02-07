@@ -115,7 +115,7 @@ type FieldInput struct {
 	Text                 githubv4.String
 }
 
-func (c *Client) UpdateProjectItemField(projectID, itemID, fieldID *githubv4.ID, input githubv4.ProjectV2FieldValue, ctx context.Context) error {
+func (c *Client) UpdateProjectItemField(projectID, itemID, fieldID githubv4.ID, input githubv4.ProjectV2FieldValue, ctx context.Context) error {
 	var m struct {
 		UpdateProjectV2ItemFieldValue struct {
 			ClientMutationId string
@@ -124,7 +124,7 @@ func (c *Client) UpdateProjectItemField(projectID, itemID, fieldID *githubv4.ID,
 	i := githubv4.UpdateProjectV2ItemFieldValueInput{
 		ProjectID: projectID,
 		ItemID:    itemID,
-		FieldID:   fieldID,
+		FieldID:   &fieldID,
 		Value:     input,
 	}
 

@@ -47,12 +47,22 @@ func (pf ProjectField) FindOptionByName(name string) (FieldOption, bool) {
 	return FieldOption{}, false
 }
 
-func GetID(pf ProjectField) *githubv4.ID {
+func GetID(pf ProjectField) githubv4.ID {
 	if pf.ProjectV2Field.ID != nil {
-		return &pf.ProjectV2Field.ID
+		return pf.ProjectV2Field.ID
 	}
 	if pf.ProjectV2IterationField.ID != nil {
-		return &pf.ProjectV2Field.ID
+		return pf.ProjectV2Field.ID
 	}
-	return &pf.ProjectV2SingleSelectField.ID
+	return pf.ProjectV2SingleSelectField.ID
+}
+
+func GetName(pf ProjectField) string {
+	if pf.ProjectV2Field.Name != "" {
+		return string(pf.ProjectV2Field.Name)
+	}
+	if pf.ProjectV2IterationField.Name != "" {
+		return string(pf.ProjectV2Field.Name)
+	}
+	return string(pf.ProjectV2SingleSelectField.Name)
 }

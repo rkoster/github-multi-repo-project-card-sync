@@ -1,6 +1,5 @@
-FROM golang:1.16
+FROM golang:1.20-rc
 WORKDIR /go/src/github.com/rkoster/github-multi-repo-project-card-sync
-RUN go get -d -v golang.org/x/net/html
 ADD ./ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o sync .
 
